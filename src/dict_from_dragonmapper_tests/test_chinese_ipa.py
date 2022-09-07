@@ -2,13 +2,13 @@ from dict_from_dragonmapper.main import get_chn_ipa, get_vowel_count
 
 
 def test_get_chn_ipa():
-  result = get_chn_ipa(tuple("堡包"))
+  result = get_chn_ipa("堡包")
 
   assert result == ('p', 'ɑ', 'ʊ˧˩˧', 'p', 'ɑ', 'ʊ˥')
 
 
 def test_get_chn_ipa__syllable_without_vowel():
-  result = get_chn_ipa(tuple("儿"))
+  result = get_chn_ipa("儿")
 
   assert result == ('ɻ',)
 
