@@ -26,7 +26,7 @@ from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
 
 
 def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser):
-  parser.description = "Transcribe vocabulary using dragonmapper."
+  parser.description = "Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper including the possibility of ignoring punctuation and splitting words on hyphens before transcribing them."
   default_oov_out = Path(gettempdir()) / "oov.txt"
   # TODO support multiple files
   parser.add_argument("vocabulary", metavar='VOCABULARY-PATH', type=parse_existing_file,
