@@ -33,7 +33,7 @@ def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser
                       help="file containing the vocabulary (words separated by line)")
   add_encoding_argument(parser, "--vocabulary-encoding", "encoding of vocabulary")
   parser.add_argument("dictionary", metavar='DICTIONARY-PATH', type=parse_path,
-                      help="path to output created dictionary")
+                      help="path to output the created dictionary")
   parser.add_argument("--weight", type=parse_positive_float, metavar="WEIGHT",
                       help="weight to assign for each pronunciation", default=1.0)
   parser.add_argument("--trim", type=parse_non_empty_or_whitespace, metavar='TRIM-SYMBOL', nargs='*',
@@ -195,8 +195,8 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
     syllable_ipa_symbols = parse_ipa_to_symbols(syllable_ipa)
     syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
     assert tone_ipa == "" or syllable_vowel_count >= 1
-    if syllable_vowel_count == 0 and hanzi_syllable_ipa not in ("ɻ", "ń"):
-      return None
+    if syllable_vowel_count == 0:
+      assert hanzi_syllable_ipa in ("ɻ", "ń")
 
     if len(tone_ipa) == 0:
       syllable_ipa_symbols_with_tones = syllable_ipa_symbols
