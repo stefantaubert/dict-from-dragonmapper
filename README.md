@@ -23,12 +23,12 @@ dict-from-dragonmapper-cli
 ```sh
 # Create example vocabulary
 cat > /tmp/vocabulary.txt << EOF
-Test?
-abc,
-"def
-Test-def.
-"xyz?
-"uv-w?
+社会语言学？
+㐻，
+『㑐
+鲜-亮。
+『占斌？
+『机具-机呀？
 EOF
 
 # Create dictionary from vocabulary and example dictionary
@@ -39,16 +39,17 @@ dict-from-dragonmapper-cli \
   --n-jobs 4
 
 cat /tmp/result.dict
-# -------
-# Output:
-# -------
-# Test?  T EH1 S T ?
-# abc,  AE1 B K ,
-# "def  " D EH1 F
-# Test-def.  T EH1 S T - D EH1 F .
-# "xyz?  " Z IH1 JH IH0 Z ?
-# "uv-w?  " AH1 V - V IY1 ?
-# -------
+```
+
+Output:
+
+```txt
+社会语言学？  ʂ ɤ˥˩ x w e ɪ˥˩ y˧˩˧ j ɛ˧˥ n ɕ ɥ œ˧˥ ？
+㐻、  n e ɪ˥˩ ，
+『㑐  『 ʂ u˥
+鲜-亮。  ɕ j ɛ˥ n - l j ɑ˥˩ ŋ 。
+『占斌？  『 ʈ ʂ a˥˩ n p i˥ n ？
+『机具-机呀？  『 t ɕ i˥ t ɕ y˥˩ - t ɕ i˥ j a ？
 ```
 
 ## Acknowledgments

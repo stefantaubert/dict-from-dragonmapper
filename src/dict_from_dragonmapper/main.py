@@ -3,6 +3,8 @@ from collections import OrderedDict
 from functools import partial
 from logging import getLogger
 from multiprocessing.pool import Pool
+from pathlib import Path
+from tempfile import gettempdir
 from typing import Dict, Optional, Tuple
 
 from dragonmapper import hanzi
@@ -16,7 +18,7 @@ from dict_from_dragonmapper.argparse_helper import (DEFAULT_PUNCTUATION, Convert
                                                     add_chunksize_argument, add_encoding_argument,
                                                     add_maxtaskperchild_argument,
                                                     add_n_jobs_argument, add_serialization_group,
-                                                    parse_existing_file,
+                                                    get_optional, parse_existing_file,
                                                     parse_non_empty_or_whitespace, parse_path,
                                                     parse_positive_float)
 from dict_from_dragonmapper.ipa2symb import parse_ipa_to_symbols
@@ -25,6 +27,7 @@ from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
 
 def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser):
   parser.description = "Transcribe vocabulary using dragonmapper."
+  default_oov_out = Path(gettempdir()) / "oov.txt"
   # TODO support multiple files
   parser.add_argument("vocabulary", metavar='VOCABULARY', type=parse_existing_file,
                       help="file containing the vocabulary (words separated by line)")
@@ -37,6 +40,8 @@ def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser
                       help="trim these symbols from the start and end of a word before lookup", action=ConvertToOrderedSetAction, default=DEFAULT_PUNCTUATION)
   parser.add_argument("--split-on-hyphen", action="store_true",
                       help="split words on hyphen symbol before lookup")
+  parser.add_argument("--oov-out", metavar="PATH", type=get_optional(parse_path),
+                      help="write out-of-vocabulary (OOV) words (i.e., words that can't transcribed) to this file (encoding will be the same as the one from the vocabulary file)", default=default_oov_out)
   add_serialization_group(parser)
   mp_group = parser.add_argument_group("multiprocessing arguments")
   add_n_jobs_argument(mp_group)
@@ -59,7 +64,7 @@ def get_pronunciations_files(ns: Namespace) -> bool:
   trim_symbols = ''.join(ns.trim)
   options = Options(trim_symbols, ns.split_on_hyphen, False, False, 1.0)
 
-  dictionary_instance = get_pronunciations(
+  dictionary_instance, unresolved_words = get_pronunciations(
     vocabulary_words, ns.weight, options, ns.n_jobs, ns.maxtasksperchild, ns.chunksize)
 
   s_options = SerializationOptions(ns.parts_sep, ns.include_numbers, ns.include_weights)
@@ -73,10 +78,24 @@ def get_pronunciations_files(ns: Namespace) -> bool:
 
   logger.info(f"Written dictionary to: \"{ns.dictionary.absolute()}\".")
 
+  if len(unresolved_words) > 0:
+    logger.warning("Not all words were contained in the reference dictionary")
+    if ns.oov_out is not None:
+      unresolved_out_content = "\n".join(unresolved_words)
+      ns.oov_out.parent.mkdir(parents=True, exist_ok=True)
+      try:
+        ns.oov_out.write_text(unresolved_out_content, "UTF-8")
+      except Exception as ex:
+        logger.error("Unresolved output file couldn't be created!")
+        return False
+      logger.info(f"Written unresolved vocabulary to: \"{ns.oov_out.absolute()}\".")
+  else:
+    logger.info("Complete vocabulary is contained in output!")
+
   return True
 
 
-def get_pronunciations(vocabulary: OrderedSet[Word], weight: float, options: Options, n_jobs: int, maxtasksperchild: Optional[int], chunksize: int) -> PronunciationDict:
+def get_pronunciations(vocabulary: OrderedSet[Word], weight: float, options: Options, n_jobs: int, maxtasksperchild: Optional[int], chunksize: int) -> Tuple[PronunciationDict, OrderedSet[Word]]:
   lookup_method = partial(
     process_get_pronunciation,
     weight=weight,
@@ -96,16 +115,20 @@ def get_pronunciations(vocabulary: OrderedSet[Word], weight: float, options: Opt
   return get_dictionary(pronunciations_to_i, vocabulary)
 
 
-def get_dictionary(pronunciations_to_i: Dict[int, Pronunciations], vocabulary: OrderedSet[Word]) -> PronunciationDict:
+def get_dictionary(pronunciations_to_i: Dict[int, Pronunciations], vocabulary: OrderedSet[Word]) -> Tuple[PronunciationDict, OrderedSet[Word]]:
   resulting_dict = OrderedDict()
+  unresolved_words = OrderedSet()
 
   for i, word in enumerate(vocabulary):
     pronunciations = pronunciations_to_i[i]
-    assert len(pronunciations) == 1
+
+    if len(pronunciations) == 0:
+      unresolved_words.add(word)
+      continue
     assert word not in resulting_dict
     resulting_dict[word] = pronunciations
 
-  return resulting_dict
+  return resulting_dict, unresolved_words
 
 
 process_unique_words: OrderedSet[Word] = None
@@ -136,19 +159,24 @@ def process_get_pronunciation(word_i: int, weight: float, options: Options) -> T
 def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   assert len(word) > 0
   result = get_chn_ipa(word)
+  if result is None:
+    return OrderedDict()
   result = OrderedDict((
     (result, weight),
   ))
   return result
 
 
-def get_chn_ipa(word_str: str) -> Tuple[str, ...]:
+def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   # e.g. -> 北风 = peɪ˧˩˧ fɤ˥ŋ
   assert isinstance(word_str, str)
   assert len(word_str) > 0
 
   syllable_split_symbol = " "
   hanzi_ipa = hanzi.to_ipa(word_str, delimiter=syllable_split_symbol, all_readings=False)
+  no_pronunciation_found = hanzi_ipa == word_str
+  if no_pronunciation_found:
+    return None
   hanzi_syllables_ipa = hanzi_ipa.split(syllable_split_symbol)
   word_ipa_symbols = []
   for hanzi_syllable_ipa in hanzi_syllables_ipa:
