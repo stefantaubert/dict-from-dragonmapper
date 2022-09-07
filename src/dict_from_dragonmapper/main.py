@@ -29,18 +29,18 @@ def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser
   parser.description = "Transcribe vocabulary using dragonmapper."
   default_oov_out = Path(gettempdir()) / "oov.txt"
   # TODO support multiple files
-  parser.add_argument("vocabulary", metavar='VOCABULARY', type=parse_existing_file,
+  parser.add_argument("vocabulary", metavar='VOCABULARY-PATH', type=parse_existing_file,
                       help="file containing the vocabulary (words separated by line)")
   add_encoding_argument(parser, "--vocabulary-encoding", "encoding of vocabulary")
-  parser.add_argument("dictionary", metavar='DICTIONARY', type=parse_path,
+  parser.add_argument("dictionary", metavar='DICTIONARY-PATH', type=parse_path,
                       help="path to output created dictionary")
-  parser.add_argument("--weight", type=parse_positive_float,
+  parser.add_argument("--weight", type=parse_positive_float, metavar="WEIGHT",
                       help="weight to assign for each pronunciation", default=1.0)
-  parser.add_argument("--trim", type=parse_non_empty_or_whitespace, metavar='SYMBOL', nargs='*',
+  parser.add_argument("--trim", type=parse_non_empty_or_whitespace, metavar='TRIM-SYMBOL', nargs='*',
                       help="trim these symbols from the start and end of a word before lookup", action=ConvertToOrderedSetAction, default=DEFAULT_PUNCTUATION)
   parser.add_argument("--split-on-hyphen", action="store_true",
                       help="split words on hyphen symbol before lookup")
-  parser.add_argument("--oov-out", metavar="PATH", type=get_optional(parse_path),
+  parser.add_argument("--oov-out", metavar="OOV-PATH", type=get_optional(parse_path),
                       help="write out-of-vocabulary (OOV) words (i.e., words that can't transcribed) to this file (encoding will be the same as the one from the vocabulary file)", default=default_oov_out)
   add_serialization_group(parser)
   mp_group = parser.add_argument_group("multiprocessing arguments")
@@ -173,20 +173,30 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   assert len(word_str) > 0
 
   syllable_split_symbol = " "
-  hanzi_ipa = hanzi.to_ipa(word_str, delimiter=syllable_split_symbol, all_readings=False)
+  try:
+    hanzi_pinyin = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
+    hanzi_ipa = hanzi.pinyin_to_ipa(hanzi_pinyin)
+  except ValueError as ex:
+    # print("Error in dragonmapper!")
+    return None
   no_pronunciation_found = hanzi_ipa == word_str
   if no_pronunciation_found:
     return None
   hanzi_syllables_ipa = hanzi_ipa.split(syllable_split_symbol)
   word_ipa_symbols = []
   for hanzi_syllable_ipa in hanzi_syllables_ipa:
-    syllable_ipa, tone_ipa = split_into_ipa_and_tones(hanzi_syllable_ipa)
+    ipa_tones = split_into_ipa_and_tones(hanzi_syllable_ipa)
+    cannot_be_separated = ipa_tones is None
+    if cannot_be_separated:
+      return None
+
+    syllable_ipa, tone_ipa = ipa_tones
     assert hanzi_syllable_ipa.endswith(tone_ipa)
     syllable_ipa_symbols = parse_ipa_to_symbols(syllable_ipa)
     syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
     assert tone_ipa == "" or syllable_vowel_count >= 1
-    if syllable_vowel_count == 0:
-      assert hanzi_syllable_ipa == "ɻ"
+    if syllable_vowel_count == 0 and hanzi_syllable_ipa not in ("ɻ", "ń"):
+      return None
 
     if len(tone_ipa) == 0:
       syllable_ipa_symbols_with_tones = syllable_ipa_symbols
@@ -207,14 +217,17 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   return symbols
 
 
-def split_into_ipa_and_tones(word: str) -> Tuple[str, str]:
+def split_into_ipa_and_tones(word: str) -> Optional[Tuple[str, str]]:
   word_ipa = ""
   word_tones = ""
   for character in word:
     if character in TONES:
       word_tones += character
     else:
-      word_ipa += character
+      if word_tones == "":
+        word_ipa += character
+      else:
+        return None
   return word_ipa, word_tones
 
 
