@@ -5,6 +5,7 @@
 [![MIT](https://img.shields.io/github/license/stefantaubert/dict-from-dragonmapper.svg)](LICENSE)
 
 Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using [dragonmapper](https://github.com/tsroten/dragonmapper) and the possibility of ignoring punctuation and splitting on hyphens before prediction.
+Instead of attaching the tones to the syllable the tones are attached to the vowel of the syllable.
 
 ## Installation
 
@@ -45,7 +46,7 @@ Output:
 
 ```txt
 社会语言学？  ʂ ɤ˥˩ x w e ɪ˥˩ y˧˩˧ j ɛ˧˥ n ɕ ɥ œ˧˥ ？
-㐻、  n e ɪ˥˩ ，
+㐻，  n e ɪ˥˩ ，
 『㑐  『 ʂ u˥
 鲜-亮。  ɕ j ɛ˥ n - l j ɑ˥˩ ŋ 。
 『占斌？  『 ʈ ʂ a˥˩ n p i˥ n ？
