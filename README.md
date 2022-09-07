@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/pyversions/dict-from-dragonmapper.svg)](https://pypi.python.org/pypi/dict-from-dragonmapper)
 [![MIT](https://img.shields.io/github/license/stefantaubert/dict-from-dragonmapper.svg)](LICENSE)
 
-Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using [dragonmapper](https://github.com/tsroten/dragonmapper) and the possibility of ignoring punctuation and splitting on hyphens before prediction.
+Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using [dragonmapper](https://github.com/tsroten/dragonmapper) and the possibility of ignoring punctuation and splitting on hyphens before transcription.
 Instead of attaching the tones to the syllable the tones are attached to the vowel of the syllable.
 
 ## Installation

@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: dragonmapper-cli
-abstract: Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper and the possibility of ignoring punctuation and splitting on hyphens before prediction.
+abstract: Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper and the possibility of ignoring punctuation and splitting on hyphens before transcription.
 message: >-
   If you use this software, please cite it using the
   metadata from this file.

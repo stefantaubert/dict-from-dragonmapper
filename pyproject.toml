@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dict-from-dragonmapper"
 version = "0.0.1"
-description = "Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper and the possibility of ignoring punctuation and splitting on hyphens before prediction."
+description = "Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper and the possibility of ignoring punctuation and splitting on hyphens before transcription."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
