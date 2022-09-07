@@ -2,7 +2,9 @@
 
 [![PyPI](https://img.shields.io/pypi/v/dict-from-dragonmapper.svg)](https://pypi.python.org/pypi/dict-from-dragonmapper)
 [![PyPI](https://img.shields.io/pypi/pyversions/dict-from-dragonmapper.svg)](https://pypi.python.org/pypi/dict-from-dragonmapper)
-[![MIT](https://img.shields.io/github/license/stefantaubert/dict-from-dragonmapper.svg)](LICENSE)
+[![MIT](https://img.shields.io/github/license/stefantaubert/dict-from-dragonmapper.svg)](https://github.com/stefantaubert/dict-from-dragonmapper/blob/master/LICENSE)
+[![PyPI](https://img.shields.io/pypi/wheel/dict-from-dragonmapper.svg)](https://pypi.python.org/pypi/dict-from-dragonmapper)
+[![PyPI](https://img.shields.io/pypi/implementation/dict-from-dragonmapper.svg)](https://pypi.python.org/pypi/dict-from-dragonmapper)
 
 Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using [dragonmapper](https://github.com/tsroten/dragonmapper) and the possibility of ignoring punctuation and splitting on hyphens before transcription.
 Instead of attaching the tones to the syllable the tones are attached to the vowel of the syllable.
@@ -52,6 +54,18 @@ Output:
 『占斌？  『 ʈ ʂ a˥˩ n p i˥ n ？
 『机具-机呀？  『 t ɕ i˥ t ɕ y˥˩ - t ɕ i˥ j a ？
 ```
+
+## Dependencies
+
+- `pronunciation-dictionary >= 0.0.4`
+- `ordered-set >= 4.1.0`
+- `word-to-pronunciation >= 0.0.1`
+- `dragonmapper >=0.2.6, < 0.3`
+- `tqdm`
+
+## License
+
+MIT License
 
 ## Acknowledgments
 
