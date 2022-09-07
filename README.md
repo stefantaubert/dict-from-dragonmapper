@@ -34,7 +34,7 @@ cat > /tmp/vocabulary.txt << EOF
 『机具-机呀？
 EOF
 
-# Create dictionary from vocabulary and example dictionary
+# Create dictionary from vocabulary
 dict-from-dragonmapper-cli \
   /tmp/vocabulary.txt \
   /tmp/result.dict \
