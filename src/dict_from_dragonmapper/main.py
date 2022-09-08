@@ -173,25 +173,25 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   assert len(word_str) > 0
 
   syllable_split_symbol = " "
-  hanzi_pinyin = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
+  pinyin_str = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
 
-  no_pinyin_found = hanzi_pinyin == word_str
+  no_pinyin_found = pinyin_str == word_str
   if no_pinyin_found:
     # print(word_str, "No pinyin!")
     return None
 
   try:
-    hanzi_ipa = hanzi.pinyin_to_ipa(hanzi_pinyin)
+    ipa_str = hanzi.pinyin_to_ipa(pinyin_str)
   except ValueError as ex:
     # print("Error in retrieving IPA from pinyin!")
     return None
 
-  no_ipa_to_pinyin_found = hanzi_pinyin == hanzi_ipa
+  no_ipa_to_pinyin_found = pinyin_str == ipa_str
   if no_ipa_to_pinyin_found:
     # print(word_str, "No IPA!", hanzi_pinyin)
     return None
 
-  hanzi_syllables_ipa = hanzi_ipa.split(syllable_split_symbol)
+  hanzi_syllables_ipa = ipa_str.split(syllable_split_symbol)
   word_ipa_symbols = []
   for hanzi_syllable_ipa in hanzi_syllables_ipa:
     ipa_tones = split_into_ipa_and_tones(hanzi_syllable_ipa)
