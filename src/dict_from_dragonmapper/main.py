@@ -173,15 +173,24 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   assert len(word_str) > 0
 
   syllable_split_symbol = " "
+  hanzi_pinyin = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
+
+  no_pinyin_found = hanzi_pinyin == word_str
+  if no_pinyin_found:
+    # print(word_str, "No pinyin!")
+    return None
+
   try:
-    hanzi_pinyin = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
     hanzi_ipa = hanzi.pinyin_to_ipa(hanzi_pinyin)
   except ValueError as ex:
-    # print("Error in dragonmapper!")
+    # print("Error in retrieving IPA from pinyin!")
     return None
-  no_pronunciation_found = hanzi_ipa == word_str
-  if no_pronunciation_found:
+
+  no_ipa_to_pinyin_found = hanzi_pinyin == hanzi_ipa
+  if no_ipa_to_pinyin_found:
+    # print(word_str, "No IPA!", hanzi_pinyin)
     return None
+
   hanzi_syllables_ipa = hanzi_ipa.split(syllable_split_symbol)
   word_ipa_symbols = []
   for hanzi_syllable_ipa in hanzi_syllables_ipa:
@@ -196,7 +205,7 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
     syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
     assert tone_ipa == "" or syllable_vowel_count >= 1
     if syllable_vowel_count == 0:
-      assert hanzi_syllable_ipa in ("ɻ", "ń")
+      assert hanzi_syllable_ipa == "ɻ"
 
     if len(tone_ipa) == 0:
       syllable_ipa_symbols_with_tones = syllable_ipa_symbols
@@ -213,17 +222,22 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
             break
         syllable_ipa_symbols_with_tones = tuple(syllable_ipa_symbols_with_tones)
 
-    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(syllable_ipa_symbols_with_tones, fusion_symbols={
-      "ʈ", "ʂ", "t", "s", "ɕ"
-    }, ignore={"ʰ"})
-
-    # Merge diphtongs
-    # {#"e", "ɪ", "ɑ","ʊ", "a",},
+    # Merge affricates
     syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(
-      syllable_ipa_symbols_with_tones, fusion_symbols=VOWELS - {"y"}, ignore={"˧", "˩", "˥"})
+      symbols=syllable_ipa_symbols_with_tones,
+      fusion_symbols={"ʈ", "ʂ", "t", "s", "ɕ"},
+      ignore={"ʰ"}
+    )
+
+    # Merge diphthongs
+    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(
+      symbols=syllable_ipa_symbols_with_tones,
+      fusion_symbols=VOWELS - {"y"},
+      ignore={"˧", "˩", "˥"}
+    )
+
     word_ipa_symbols.extend(syllable_ipa_symbols_with_tones)
   symbols = tuple(word_ipa_symbols)
-  # Merge affricates
   return symbols
 
 
