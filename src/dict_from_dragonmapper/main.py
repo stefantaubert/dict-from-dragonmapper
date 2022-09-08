@@ -168,7 +168,7 @@ def lookup_in_model(word: Word, weight: float) -> Pronunciations:
 
 
 def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
-  # e.g. -> 北风 = peɪ˧˩˧ fɤ˥ŋ
+  # e.g. -> 北风 => p eɪ˧˩˧ f ɤ˥ ŋ
   assert isinstance(word_str, str)
   assert len(word_str) > 0
 
@@ -179,16 +179,25 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
   if no_pinyin_found:
     # print(word_str, "No pinyin!")
     return None
-
   try:
     ipa_str = hanzi.pinyin_to_ipa(pinyin_str)
   except ValueError as ex:
-    # print("Error in retrieving IPA from pinyin!")
+    #print("Error in retrieving IPA from pinyin!", pinyin_str, ex.args[0])
     return None
 
-  no_ipa_to_pinyin_found = pinyin_str == ipa_str
+  # some pinyin will result in invalid IPA:
+  # 嗯 returns ń
+  # 嗯啦 returns ńla
+
+  # therefore filtering:
+  # probably does not contain all
+  exceptions_pinyin_ipa_same = {'li', 'fu', 'lu', 'a',
+                                'mu', 'wa', 'la', 'fa',
+                                'su', 'ma', 'wan', 'san'}
+
+  no_ipa_to_pinyin_found = pinyin_str == ipa_str and pinyin_str not in exceptions_pinyin_ipa_same
   if no_ipa_to_pinyin_found:
-    # print(word_str, "No IPA!", hanzi_pinyin)
+    # print(word_str, "No IPA!", pinyin_str)
     return None
 
   hanzi_syllables_ipa = ipa_str.split(syllable_split_symbol)
