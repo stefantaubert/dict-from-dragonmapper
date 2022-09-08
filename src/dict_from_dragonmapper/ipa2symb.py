@@ -1,10 +1,6 @@
-from typing import Iterable, List, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
 
-from dict_from_dragonmapper.ipa_symbols import (APPENDIX, CHARACTERS, CONSONANTS,
-                                                ENG_ARPA_DIPHTONGS, ENG_DIPHTHONGS,
-                                                PUNCTUATION_AND_WHITESPACE, SCHWAS, STRESS_PRIMARY,
-                                                STRESS_SECONDARY, STRESSES, TIE_ABOVE, TIE_BELOW,
-                                                TIES, TONES, VOWELS)
+from dict_from_dragonmapper.ipa_symbols import APPENDIX, PUNCTUATION_AND_WHITESPACE, STRESSES, TIES
 
 
 def merge_fusion_with_ignore(symbols: Tuple[str, ...], fusion_symbols: Set[str], ignore: Set[str]) -> Tuple[str, ...]:

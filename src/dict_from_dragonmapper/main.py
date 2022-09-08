@@ -21,8 +21,7 @@ from dict_from_dragonmapper.argparse_helper import (DEFAULT_PUNCTUATION, Convert
                                                     get_optional, parse_existing_file,
                                                     parse_non_empty_or_whitespace, parse_path,
                                                     parse_positive_float)
-from dict_from_dragonmapper.ipa2symb import (merge_fusion_with_ignore, merge_template_with_ignore,
-                                             parse_ipa_to_symbols)
+from dict_from_dragonmapper.ipa2symb import merge_fusion_with_ignore, parse_ipa_to_symbols
 from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
 
 
