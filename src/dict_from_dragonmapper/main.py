@@ -21,7 +21,8 @@ from dict_from_dragonmapper.argparse_helper import (DEFAULT_PUNCTUATION, Convert
                                                     get_optional, parse_existing_file,
                                                     parse_non_empty_or_whitespace, parse_path,
                                                     parse_positive_float)
-from dict_from_dragonmapper.ipa2symb import parse_ipa_to_symbols
+from dict_from_dragonmapper.ipa2symb import (merge_fusion_with_ignore, merge_template_with_ignore,
+                                             parse_ipa_to_symbols)
 from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
 
 
@@ -205,15 +206,25 @@ def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
         syllable_ipa_symbols_with_tones = tuple(
             symbol + tone_ipa if is_vowel(symbol) else symbol for symbol in syllable_ipa_symbols)
       else:
-        syllable_ipa_symbols_with_tones = [symbol for symbol in syllable_ipa_symbols]
+        syllable_ipa_symbols_with_tones = list(syllable_ipa_symbols)
         for i in range(len(syllable_ipa_symbols)):
           current_symbol = syllable_ipa_symbols[-i - 1]
           if is_vowel(current_symbol):
             syllable_ipa_symbols_with_tones[-i - 1] += tone_ipa
             break
         syllable_ipa_symbols_with_tones = tuple(syllable_ipa_symbols_with_tones)
+
+    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(syllable_ipa_symbols_with_tones, fusion_symbols={
+      "ʈ", "ʂ", "t", "s", "ɕ"
+    }, ignore={"ʰ"})
+
+    # Merge diphtongs
+    # {#"e", "ɪ", "ɑ","ʊ", "a",},
+    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(
+      syllable_ipa_symbols_with_tones, fusion_symbols=VOWELS - {"y"}, ignore={"˧", "˩", "˥"})
     word_ipa_symbols.extend(syllable_ipa_symbols_with_tones)
   symbols = tuple(word_ipa_symbols)
+  # Merge affricates
   return symbols
 
 

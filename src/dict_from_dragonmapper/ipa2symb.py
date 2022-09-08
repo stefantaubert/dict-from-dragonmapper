@@ -7,6 +7,46 @@ from dict_from_dragonmapper.ipa_symbols import (APPENDIX, CHARACTERS, CONSONANTS
                                                 TIES, TONES, VOWELS)
 
 
+def merge_fusion_with_ignore(symbols: Tuple[str, ...], fusion_symbols: Set[str], ignore: Set[str]) -> Tuple[str, ...]:
+  aux_symbols = list(symbols)
+  fused_symbols = []
+  while len(aux_symbols) != 0:
+    next_fused_symbols, processed_index = get_next_fused_symbols_and_index(
+      aux_symbols, fusion_symbols, ignore)
+    fused_symbols.append(next_fused_symbols)
+    del aux_symbols[:processed_index + 1]
+  return tuple(fused_symbols)
+
+
+def get_next_fused_symbols_and_index(symbols: Tuple[str, ...], fusion_symbols: Set[str], ignore: Set[str]) -> Tuple[str, int]:
+  first_symbol_without_ignore_symbols = strip_off_ignore(symbols[0], ignore)
+  if first_symbol_without_ignore_symbols not in fusion_symbols:
+    return symbols[0], 0
+  fused_fusion_symbols, processed_index = get_next_consecutive_fusion_symbols_and_index(
+    symbols, fusion_symbols, ignore)
+  return fused_fusion_symbols, processed_index
+
+
+def get_next_consecutive_fusion_symbols_and_index(symbols: Tuple[str, ...], fusion_symbols: Set[str], ignore: Set[str]) -> Tuple[str, int]:
+  assert strip_off_ignore(symbols[0], ignore) in fusion_symbols
+  consecutive_fusion_symbols = symbols[0]
+  processed_index = 0
+  for symbol in symbols[1:]:
+    symbol_without_ignore = strip_off_ignore(symbol, ignore)
+    if symbol_without_ignore in fusion_symbols:
+      consecutive_fusion_symbols += symbol
+      processed_index += 1
+    else:
+      break
+  return consecutive_fusion_symbols, processed_index
+
+
+def strip_off_ignore(symbol: str, ignore: Set[str]) -> str:
+  for ignore_symbol in ignore:
+    symbol = symbol.replace(ignore_symbol, "")
+  return symbol
+
+
 def parse_ipa_to_symbols(sentence: str) -> Tuple[str, ...]:
   all_symbols = tuple(sentence)
   return parse_ipa_symbols_to_symbols(all_symbols)
