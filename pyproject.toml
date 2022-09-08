@@ -1,6 +1,6 @@
 [project]
 name = "dict-from-dragonmapper"
-version = "0.0.1"
+version = "0.0.2"
 description = "Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper including the possibility of ignoring punctuation and splitting words on hyphens before transcribing them."
 readme = "README.md"
 requires-python = ">=3.8"

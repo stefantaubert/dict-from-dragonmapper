@@ -47,12 +47,72 @@ cat /tmp/result.dict
 Output:
 
 ```txt
-社会语言学？  ʂ ɤ˥˩ x w e ɪ˥˩ y˧˩˧ j ɛ˧˥ n ɕ ɥ œ˧˥ ？
-㐻，  n e ɪ˥˩ ，
+社会语言学？  ʂ ɤ˥˩ x w eɪ˥˩ y˧˩˧ j ɛ˧˥ n ɕ ɥ œ˧˥ ？
+㐻，  n eɪ˥˩ ，
 『㑐  『 ʂ u˥
 鲜-亮。  ɕ j ɛ˥ n - l j ɑ˥˩ ŋ 。
-『占斌？  『 ʈ ʂ a˥˩ n p i˥ n ？
-『机具-机呀？  『 t ɕ i˥ t ɕ y˥˩ - t ɕ i˥ j a ？
+『占斌？  『 ʈʂ a˥˩ n p i˥ n ？
+『机具-机呀？  『 tɕ i˥ tɕ y˥˩ - tɕ i˥ j a ？
+```
+
+## Phoneme Set
+
+```txt
+a
+ai
+aɪ
+eɪ
+f
+i
+j
+k
+kʰ
+l
+m
+n
+oʊ
+p
+pʰ
+s
+t
+ts
+tsʰ
+tɕ
+tɕʰ
+tʰ
+u
+w
+x
+y
+ń
+ŋ
+œ
+ɑ
+ɑʊ
+ɔ
+ɕ
+ə
+ɛ
+ɤ
+ɥ
+ɨ
+ɯ
+ɻ
+ʂ
+ʈʂ
+ʈʂʰ
+ʊ
+ʐ
+```
+
+Vowels and diphthongs contain one of these tones:
+
+```txt
+˥ (first tone)
+˧˥ (second tone)
+˧˩˧ (third tone)
+˥˩ (fourth tone)
+(none)
 ```
 
 ## Dependencies
