@@ -4,7 +4,7 @@ from dict_from_dragonmapper.main import get_chn_ipa, get_vowel_count
 def test_get_chn_ipa():
   result = get_chn_ipa("堡包")
 
-  assert result == ('p', 'ɑ', 'ʊ˧˩˧', 'p', 'ɑ', 'ʊ˥')
+  assert result == ('p', 'ɑʊ˧˩˧', 'p', 'ɑʊ˥')
 
 
 def test_get_chn_ipa__syllable_without_vowel():
