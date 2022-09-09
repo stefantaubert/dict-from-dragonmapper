@@ -5,7 +5,7 @@ from logging import getLogger
 from multiprocessing.pool import Pool
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dragonmapper import hanzi
 from ordered_set import OrderedSet
@@ -158,8 +158,9 @@ def process_get_pronunciation(word_i: int, weight: float, options: Options) -> T
 
 def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   assert len(word) > 0
-  result = get_chn_ipa(word)
-  if result is None:
+  try:
+    result = get_chn_ipa(word)
+  except ValueError as er:
     return OrderedDict()
   result = OrderedDict((
     (result, weight),
@@ -167,101 +168,116 @@ def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   return result
 
 
-def get_chn_ipa(word_str: str) -> Optional[Tuple[str, ...]]:
-  # e.g. -> 北风 => p eɪ˧˩˧ f ɤ˥ ŋ
-  assert isinstance(word_str, str)
-  assert len(word_str) > 0
+def attach_tones_to_vowel(syllable_ipa: str) -> Tuple[str, ...]:
+  ipa_tones = separate_syllable_ipa_into_phonemes_and_tones(syllable_ipa)
+  syllable_phonemes, tone_ipa = ipa_tones
+  assert syllable_ipa.endswith(tone_ipa)
 
-  syllable_split_symbol = " "
-  pinyin_str = hanzi.to_pinyin(word_str, delimiter=syllable_split_symbol, all_readings=False)
+  syllable_ipa_symbols = parse_ipa_to_symbols(syllable_phonemes)
+  syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
+  assert tone_ipa == "" or syllable_vowel_count >= 1
+  if syllable_vowel_count == 0:
+    assert syllable_ipa == "ɻ"
 
-  no_pinyin_found = pinyin_str == word_str
+  if len(tone_ipa) == 0:
+    syllable_ipa_symbols_with_tones = syllable_ipa_symbols
+  else:
+    if syllable_vowel_count <= 1:
+      syllable_ipa_symbols_with_tones = tuple(
+          symbol + tone_ipa if is_vowel(symbol) else symbol for symbol in syllable_ipa_symbols)
+    else:
+      syllable_ipa_symbols_with_tones = list(syllable_ipa_symbols)
+      for i in range(len(syllable_ipa_symbols)):
+        current_symbol = syllable_ipa_symbols[-i - 1]
+        if is_vowel(current_symbol):
+          syllable_ipa_symbols_with_tones[-i - 1] += tone_ipa
+          break
+      syllable_ipa_symbols_with_tones = tuple(syllable_ipa_symbols_with_tones)
+  return syllable_ipa_symbols_with_tones
+
+
+def merge_affricatives(syllable_ipa: Tuple[str, ...]) -> Tuple[str, ...]:
+  result = merge_fusion_with_ignore(
+    symbols=syllable_ipa,
+    fusion_symbols={"ʈ", "ʂ", "t", "s", "ɕ"},
+    ignore={"ʰ"}
+  )
+  return result
+
+
+def merge_diphthongs(syllable_ipa: Tuple[str, ...]) -> Tuple[str, ...]:
+  result = merge_fusion_with_ignore(
+    symbols=syllable_ipa,
+    fusion_symbols=VOWELS - {"y"},
+    ignore={"˧", "˩", "˥"}
+  )
+  return result
+
+
+def get_syllable_ipa(syllable: str) -> Tuple[str, ...]:
+  assert isinstance(syllable, str)
+  assert len(syllable) == 1
+
+  # TODO support all readings
+  syllable_pinyin = hanzi.to_pinyin(syllable, delimiter=None, all_readings=False)
+  no_pinyin_found = syllable_pinyin == syllable
+
   if no_pinyin_found:
     # print(word_str, "No pinyin!")
-    return None
+    raise ValueError("Pinyin couldn't be retrieved from syllable!")
+
   try:
-    ipa_str = hanzi.pinyin_to_ipa(pinyin_str)
+    syllable_ipa = hanzi.pinyin_to_ipa(syllable_pinyin)
   except ValueError as ex:
     #print("Error in retrieving IPA from pinyin!", pinyin_str, ex.args[0])
-    return None
+    raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!") from ex
 
   # some pinyin will result in invalid IPA:
   # 嗯 returns ń
-  # 嗯啦 returns ńla
-
   # therefore filtering:
   # probably does not contain all
   exceptions_pinyin_ipa_same = {'li', 'fu', 'lu', 'a',
                                 'mu', 'wa', 'la', 'fa',
                                 'su', 'ma', 'wan', 'san'}
 
-  no_ipa_to_pinyin_found = pinyin_str == ipa_str and pinyin_str not in exceptions_pinyin_ipa_same
+  no_ipa_to_pinyin_found = syllable_pinyin == syllable_ipa and syllable_pinyin not in exceptions_pinyin_ipa_same
   if no_ipa_to_pinyin_found:
-    # print(word_str, "No IPA!", pinyin_str)
-    return None
+    raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!")
 
-  hanzi_syllables_ipa = ipa_str.split(syllable_split_symbol)
-  word_ipa_symbols = []
-  for hanzi_syllable_ipa in hanzi_syllables_ipa:
-    ipa_tones = split_into_ipa_and_tones(hanzi_syllable_ipa)
-    cannot_be_separated = ipa_tones is None
-    if cannot_be_separated:
-      return None
+  syllable_ipa = attach_tones_to_vowel(syllable_ipa)
+  syllable_ipa = merge_affricatives(syllable_ipa)
+  syllable_ipa = merge_diphthongs(syllable_ipa)
 
-    syllable_ipa, tone_ipa = ipa_tones
-    assert hanzi_syllable_ipa.endswith(tone_ipa)
-    syllable_ipa_symbols = parse_ipa_to_symbols(syllable_ipa)
-    syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
-    assert tone_ipa == "" or syllable_vowel_count >= 1
-    if syllable_vowel_count == 0:
-      assert hanzi_syllable_ipa == "ɻ"
+  return syllable_ipa
 
-    if len(tone_ipa) == 0:
-      syllable_ipa_symbols_with_tones = syllable_ipa_symbols
-    else:
-      if syllable_vowel_count <= 1:
-        syllable_ipa_symbols_with_tones = tuple(
-            symbol + tone_ipa if is_vowel(symbol) else symbol for symbol in syllable_ipa_symbols)
-      else:
-        syllable_ipa_symbols_with_tones = list(syllable_ipa_symbols)
-        for i in range(len(syllable_ipa_symbols)):
-          current_symbol = syllable_ipa_symbols[-i - 1]
-          if is_vowel(current_symbol):
-            syllable_ipa_symbols_with_tones[-i - 1] += tone_ipa
-            break
-        syllable_ipa_symbols_with_tones = tuple(syllable_ipa_symbols_with_tones)
 
-    # Merge affricates
-    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(
-      symbols=syllable_ipa_symbols_with_tones,
-      fusion_symbols={"ʈ", "ʂ", "t", "s", "ɕ"},
-      ignore={"ʰ"}
-    )
+def get_chn_ipa(word_str: str) -> Tuple[str, ...]:
+  # e.g. -> 北风 => p eɪ˧˩˧ f ɤ˥ ŋ
+  assert isinstance(word_str, str)
+  assert len(word_str) > 0
 
-    # Merge diphthongs
-    syllable_ipa_symbols_with_tones = merge_fusion_with_ignore(
-      symbols=syllable_ipa_symbols_with_tones,
-      fusion_symbols=VOWELS - {"y"},
-      ignore={"˧", "˩", "˥"}
-    )
-
+  word_ipa_symbols: List[str] = []
+  for syllable in word_str:
+    try:
+      syllable_ipa_symbols_with_tones = get_syllable_ipa(syllable)
+    except ValueError as er:
+      raise ValueError(f"Syllable \"{syllable}\" couldn't be transcribed!") from er
     word_ipa_symbols.extend(syllable_ipa_symbols_with_tones)
   symbols = tuple(word_ipa_symbols)
   return symbols
 
 
-def split_into_ipa_and_tones(word: str) -> Optional[Tuple[str, str]]:
-  word_ipa = ""
-  word_tones = ""
-  for character in word:
+def separate_syllable_ipa_into_phonemes_and_tones(syllable_ipa: str) -> Tuple[str, str]:
+  syllable_phonemes = ""
+  syllable_tones = ""
+  for character in syllable_ipa:
     if character in TONES:
-      word_tones += character
+      syllable_tones += character
     else:
-      if word_tones == "":
-        word_ipa += character
-      else:
-        return None
-  return word_ipa, word_tones
+      # No characters after tones allowed
+      assert syllable_tones == ""
+      syllable_phonemes += character
+  return syllable_phonemes, syllable_tones
 
 
 def is_vowel(symbol: str) -> bool:
