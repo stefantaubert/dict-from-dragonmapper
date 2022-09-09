@@ -159,7 +159,7 @@ def process_get_pronunciation(word_i: int, weight: float, options: Options) -> T
 def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   assert len(word) > 0
   try:
-    result = get_chn_ipa(word)
+    result = get_ipa_from_word(word)
   except ValueError as er:
     return OrderedDict()
   result = OrderedDict((
@@ -251,7 +251,7 @@ def get_syllable_ipa(syllable: str) -> Tuple[str, ...]:
   return syllable_ipa
 
 
-def get_chn_ipa(word_str: str) -> Tuple[str, ...]:
+def get_ipa_from_word(word_str: str) -> Tuple[str, ...]:
   # e.g. -> 北风 => p eɪ˧˩˧ f ɤ˥ ŋ
   assert isinstance(word_str, str)
   assert len(word_str) > 0

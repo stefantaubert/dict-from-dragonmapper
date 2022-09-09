@@ -1,14 +1,14 @@
-from dict_from_dragonmapper.main import get_chn_ipa, get_vowel_count
+from dict_from_dragonmapper.main import get_ipa_from_word, get_vowel_count
 
 
 def test_get_chn_ipa():
-  result = get_chn_ipa("堡包")
+  result = get_ipa_from_word("堡包")
 
   assert result == ('p', 'ɑʊ˧˩˧', 'p', 'ɑʊ˥')
 
 
 def test_get_chn_ipa__syllable_without_vowel():
-  result = get_chn_ipa("儿")
+  result = get_ipa_from_word("儿")
 
   assert result == ('ɻ',)
 
