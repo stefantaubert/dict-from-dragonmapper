@@ -62,7 +62,7 @@ def get_pronunciations_files(ns: Namespace) -> bool:
 
   vocabulary_words = OrderedSet(vocabulary_content.splitlines())
   trim_symbols = ''.join(ns.trim)
-  options = Options(trim_symbols, ns.split_on_hyphen, False, False, 1.0)
+  options = Options(trim_symbols, ns.split_on_hyphen, False, False, ns.weight)
 
   dictionary_instance, unresolved_words = get_pronunciations(
     vocabulary_words, ns.weight, options, ns.n_jobs, ns.maxtasksperchild, ns.chunksize)
