@@ -134,3 +134,4 @@ dmypy.json
 src/playground.py
 deploy-PyPI.sh
 deploy.sh
+changes.txt

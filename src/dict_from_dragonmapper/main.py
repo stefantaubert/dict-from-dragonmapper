@@ -24,6 +24,11 @@ from dict_from_dragonmapper.argparse_helper import (DEFAULT_PUNCTUATION, Convert
 from dict_from_dragonmapper.ipa2symb import merge_fusion_with_ignore, parse_ipa_to_symbols
 from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
 
+# probably does not contain all
+EXCEPTIONS_WHERE_PINYIN_AND_IPA_IS_EQUAL = {'li', 'fu', 'lu', 'a',
+                                            'mu', 'wa', 'la', 'fa',
+                                            'su', 'ma', 'wan', 'san'}
+
 
 def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser):
   parser.description = "Command-line interface (CLI) to create a pronunciation dictionary by looking up IPA transcriptions using dragonmapper including the possibility of ignoring punctuation and splitting words on hyphens before transcribing them."
@@ -168,7 +173,7 @@ def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   return result
 
 
-def attach_tones_to_vowel(syllable_ipa: str) -> Tuple[str, ...]:
+def attach_tones_to_last_vowel(syllable_ipa: str) -> Tuple[str, ...]:
   ipa_tones = separate_syllable_ipa_into_phonemes_and_tones(syllable_ipa)
   syllable_phonemes, tone_ipa = ipa_tones
   assert syllable_ipa.endswith(tone_ipa)
@@ -226,6 +231,14 @@ def get_syllable_ipa(syllable: str) -> Tuple[str, ...]:
     # print(word_str, "No pinyin!")
     raise ValueError("Pinyin couldn't be retrieved from syllable!")
 
+  # some pinyin will result in invalid IPA in the next step which is why it will be considered before for known errors
+  # 嗯 returns ń
+  if syllable_pinyin == "ń":
+    return ("n˧˥",)
+
+  # if syllable_pinyin == "ʂai˥˩":
+  #   return ("ʂ", "aɪ˥˩")
+
   try:
     syllable_ipa = hanzi.pinyin_to_ipa(syllable_pinyin)
   except ValueError as ex:
@@ -233,18 +246,18 @@ def get_syllable_ipa(syllable: str) -> Tuple[str, ...]:
     raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!") from ex
 
   # some pinyin will result in invalid IPA:
-  # 嗯 returns ń
   # therefore filtering:
-  # probably does not contain all
-  exceptions_pinyin_ipa_same = {'li', 'fu', 'lu', 'a',
-                                'mu', 'wa', 'la', 'fa',
-                                'su', 'ma', 'wan', 'san'}
-
-  no_ipa_to_pinyin_found = syllable_pinyin == syllable_ipa and syllable_pinyin not in exceptions_pinyin_ipa_same
+  no_ipa_to_pinyin_found = syllable_pinyin == syllable_ipa and syllable_pinyin not in EXCEPTIONS_WHERE_PINYIN_AND_IPA_IS_EQUAL
   if no_ipa_to_pinyin_found:
     raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!")
 
-  syllable_ipa = attach_tones_to_vowel(syllable_ipa)
+  # 晒 returns "ʂai˥˩" which is incorrect
+  if "ai" in syllable_ipa:
+    logger = getLogger(__name__)
+    logger.debug(f"fix: replaced wrong 'ai' to 'aɪ' in '{syllable_ipa}'")
+    syllable_ipa = syllable_ipa.replace("ai", "aɪ")
+
+  syllable_ipa = attach_tones_to_last_vowel(syllable_ipa)
   syllable_ipa = merge_affricatives(syllable_ipa)
   syllable_ipa = merge_diphthongs(syllable_ipa)
 

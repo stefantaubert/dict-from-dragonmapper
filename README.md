@@ -59,7 +59,6 @@ Output:
 
 ```txt
 a
-ai
 aɪ
 eɪ
 f
