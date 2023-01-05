@@ -1,9 +1,11 @@
 from typing import Tuple
 
-from dict_from_dragonmapper.main import get_ipa_from_word
+from ordered_set import OrderedSet
+
+from dict_from_dragonmapper.transcription import word_to_ipa as transcription_word_to_ipa
 
 
-def get_ipa(word: str) -> Tuple[str, ...]:
+def word_to_ipa(word: str) -> OrderedSet[Tuple[str, ...]]:
   if not isinstance(word, str):
     raise ValueError("Parameter word: Value needs to be of type 'str'!")
 
@@ -13,5 +15,5 @@ def get_ipa(word: str) -> Tuple[str, ...]:
   if len(word) == 0:
     return tuple()
 
-  result = get_ipa_from_word(word)
+  result = transcription_word_to_ipa(word)
   return result

@@ -1,1 +1,1 @@
-from dict_from_dragonmapper.api import get_ipa
+from dict_from_dragonmapper.api import word_to_ipa

@@ -5,9 +5,8 @@ from logging import getLogger
 from multiprocessing.pool import Pool
 from pathlib import Path
 from tempfile import gettempdir
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
-from dragonmapper import hanzi
 from ordered_set import OrderedSet
 from pronunciation_dictionary import (PronunciationDict, Pronunciations, SerializationOptions, Word,
                                       save_dict)
@@ -21,13 +20,7 @@ from dict_from_dragonmapper.argparse_helper import (DEFAULT_PUNCTUATION, Convert
                                                     get_optional, parse_existing_file,
                                                     parse_non_empty_or_whitespace, parse_path,
                                                     parse_positive_float)
-from dict_from_dragonmapper.ipa2symb import merge_fusion_with_ignore, parse_ipa_to_symbols
-from dict_from_dragonmapper.ipa_symbols import SCHWAS, TONES, VOWELS
-
-# probably does not contain all
-EXCEPTIONS_WHERE_PINYIN_AND_IPA_IS_EQUAL = {'li', 'fu', 'lu', 'a',
-                                            'mu', 'wa', 'la', 'fa',
-                                            'su', 'ma', 'wan', 'san'}
+from dict_from_dragonmapper.transcription import word_to_ipa
 
 
 def get_app_try_add_vocabulary_from_pronunciations_parser(parser: ArgumentParser):
@@ -164,141 +157,11 @@ def process_get_pronunciation(word_i: int, weight: float, options: Options) -> T
 def lookup_in_model(word: Word, weight: float) -> Pronunciations:
   assert len(word) > 0
   try:
-    result = get_ipa_from_word(word)
-  except ValueError as er:
+    word_IPAs = word_to_ipa(word)
+  except ValueError as error:
     return OrderedDict()
-  result = OrderedDict((
-    (result, weight),
-  ))
-  return result
-
-
-def attach_tones_to_last_vowel(syllable_ipa: str) -> Tuple[str, ...]:
-  ipa_tones = separate_syllable_ipa_into_phonemes_and_tones(syllable_ipa)
-  syllable_phonemes, tone_ipa = ipa_tones
-  assert syllable_ipa.endswith(tone_ipa)
-
-  syllable_ipa_symbols = parse_ipa_to_symbols(syllable_phonemes)
-  syllable_vowel_count = get_vowel_count(syllable_ipa_symbols)
-  assert tone_ipa == "" or syllable_vowel_count >= 1
-  if syllable_vowel_count == 0:
-    assert syllable_ipa == "ɻ"
-
-  if len(tone_ipa) == 0:
-    syllable_ipa_symbols_with_tones = syllable_ipa_symbols
-  else:
-    if syllable_vowel_count <= 1:
-      syllable_ipa_symbols_with_tones = tuple(
-          symbol + tone_ipa if is_vowel(symbol) else symbol for symbol in syllable_ipa_symbols)
-    else:
-      syllable_ipa_symbols_with_tones = list(syllable_ipa_symbols)
-      for i in range(len(syllable_ipa_symbols)):
-        current_symbol = syllable_ipa_symbols[-i - 1]
-        if is_vowel(current_symbol):
-          syllable_ipa_symbols_with_tones[-i - 1] += tone_ipa
-          break
-      syllable_ipa_symbols_with_tones = tuple(syllable_ipa_symbols_with_tones)
-  return syllable_ipa_symbols_with_tones
-
-
-def merge_affricatives(syllable_ipa: Tuple[str, ...]) -> Tuple[str, ...]:
-  result = merge_fusion_with_ignore(
-    symbols=syllable_ipa,
-    fusion_symbols={"ʈ", "ʂ", "t", "s", "ɕ"},
-    ignore={"ʰ"}
+  result = OrderedDict(
+    (word_IPA, weight)
+    for word_IPA in word_IPAs
   )
-  return result
-
-
-def merge_diphthongs(syllable_ipa: Tuple[str, ...]) -> Tuple[str, ...]:
-  result = merge_fusion_with_ignore(
-    symbols=syllable_ipa,
-    fusion_symbols=VOWELS - {"y"},
-    ignore={"˧", "˩", "˥"}
-  )
-  return result
-
-
-def get_syllable_ipa(syllable: str) -> Tuple[str, ...]:
-  assert isinstance(syllable, str)
-  assert len(syllable) == 1
-
-  # TODO support all readings
-  syllable_pinyin = hanzi.to_pinyin(syllable, delimiter=None, all_readings=False)
-  no_pinyin_found = syllable_pinyin == syllable
-
-  if no_pinyin_found:
-    # print(word_str, "No pinyin!")
-    raise ValueError("Pinyin couldn't be retrieved from syllable!")
-
-  # some pinyin will result in invalid IPA in the next step which is why it will be considered before for known errors
-  # 嗯 returns ń
-  if syllable_pinyin == "ń":
-    return ("n˧˥",)
-
-  # if syllable_pinyin == "ʂai˥˩":
-  #   return ("ʂ", "aɪ˥˩")
-
-  try:
-    syllable_ipa = hanzi.pinyin_to_ipa(syllable_pinyin)
-  except ValueError as ex:
-    #print("Error in retrieving IPA from pinyin!", pinyin_str, ex.args[0])
-    raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!") from ex
-
-  # some pinyin will result in invalid IPA:
-  # therefore filtering:
-  no_ipa_to_pinyin_found = syllable_pinyin == syllable_ipa and syllable_pinyin not in EXCEPTIONS_WHERE_PINYIN_AND_IPA_IS_EQUAL
-  if no_ipa_to_pinyin_found:
-    raise ValueError(f"IPA couldn't be retrieved from Pinyin (\"{syllable_pinyin}\")!")
-
-  # 晒 returns "ʂai˥˩" which is incorrect
-  if "ai" in syllable_ipa:
-    logger = getLogger(__name__)
-    logger.debug(f"fix: replaced wrong 'ai' to 'aɪ' in '{syllable_ipa}'")
-    syllable_ipa = syllable_ipa.replace("ai", "aɪ")
-
-  syllable_ipa = attach_tones_to_last_vowel(syllable_ipa)
-  syllable_ipa = merge_affricatives(syllable_ipa)
-  syllable_ipa = merge_diphthongs(syllable_ipa)
-
-  return syllable_ipa
-
-
-def get_ipa_from_word(word_str: str) -> Tuple[str, ...]:
-  # e.g. -> 北风 => p eɪ˧˩˧ f ɤ˥ ŋ
-  assert isinstance(word_str, str)
-  assert len(word_str) > 0
-
-  word_ipa_symbols: List[str] = []
-  for syllable in word_str:
-    try:
-      syllable_ipa_symbols_with_tones = get_syllable_ipa(syllable)
-    except ValueError as er:
-      raise ValueError(f"Syllable \"{syllable}\" couldn't be transcribed!") from er
-    word_ipa_symbols.extend(syllable_ipa_symbols_with_tones)
-  symbols = tuple(word_ipa_symbols)
-  return symbols
-
-
-def separate_syllable_ipa_into_phonemes_and_tones(syllable_ipa: str) -> Tuple[str, str]:
-  syllable_phonemes = ""
-  syllable_tones = ""
-  for character in syllable_ipa:
-    if character in TONES:
-      syllable_tones += character
-    else:
-      # No characters after tones allowed
-      assert syllable_tones == ""
-      syllable_phonemes += character
-  return syllable_phonemes, syllable_tones
-
-
-def is_vowel(symbol: str) -> bool:
-  vowels = VOWELS | SCHWAS
-  result = all(sub_symbol in vowels for sub_symbol in tuple(symbol))
-  return result
-
-
-def get_vowel_count(symbols: Tuple[str, ...]) -> int:
-  result = sum(1 if is_vowel(symbol) else 0 for symbol in symbols)
   return result
