@@ -106,12 +106,12 @@ def pinyin_to_ipa(syllable_pinyin: str) -> Tuple[str, ...]:
   # DEBUG    dict_from_dragonmapper.transcription:transcription.py:175 Pinyin 'ng̀' from syllable '嗯' couldn't be transcribed to IPA!
   # DEBUG    dict_from_dragonmapper.transcription:transcription.py:175 Pinyin 'ňg' from syllable '嗯' couldn't be transcribed to IPA!
   # DEBUG    dict_from_dragonmapper.transcription:transcription.py:175 Pinyin 'ǹg' from syllable '嗯' couldn't be transcribed to IPA!
-  if syllable_pinyin == "ń":
-    return ("n",)
-  if syllable_pinyin == "ńg":
-    return ("ŋ",)
-  if syllable_pinyin == "hng":
-    return ("x", "ŋ")
+  # if syllable_pinyin == "ń":
+  #   return ("n",)
+  # if syllable_pinyin == "ńg":
+  #   return ("ŋ",)
+  # if syllable_pinyin == "hng":
+  #   return ("x", "ŋ")
 
   try:
     syllable_ipa = hanzi.pinyin_to_ipa(syllable_pinyin)
@@ -164,8 +164,8 @@ def syllable_to_pinyin(syllable: str) -> OrderedSet[str]:
   if no_pinyin_found:
     # print(word_str, "No pinyin!")
     raise ValueError(f"Pinyin couldn't be retrieved from syllable '{syllable}'!")
-
-  readings = syllable_pinyin[1:-1].split("/")
+  readings_without_container = syllable_pinyin[1:-1]
+  readings = readings_without_container.split("/")
   result = OrderedSet(readings)
   return result
 

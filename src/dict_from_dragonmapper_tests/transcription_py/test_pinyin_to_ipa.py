@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 
 from ordered_set import OrderedSet
@@ -61,6 +62,7 @@ def test_all_transcribed_syllables_from_test_vocabulary_contain_valid_IPA():
 
   assert len(unique_IPA_symbols) == 111
 
+
 def test_呐():
   res = pinyin_to_ipa("jìn")
   assert res == ("tɕ", "i˥˩", "n")
@@ -80,6 +82,34 @@ def test_most_syllables_from_test_vocabulary_could_be_transcribed():
       except ValueError as ex:
         failed_syllables.add((syllable, pinyin))
         continue
-      all_transcriptions.add(res)
+      all_transcriptions.add((syllable, pinyin, res))
 
+  assert len(failed_syllables) == 0
+
+def test_test_syllables():
+  # /home/mi/.local/share/virtualenvs/dict-from-dragonmapper-3X8mXu-r/lib/python3.8/site-packages/dragonmapper/data/transcriptions.csv
+  voc = Path("res/test-syllables.txt").read_text("UTF-8")
+  voc = voc.replace("\n", " ")
+  voc = voc.replace(",", "")
+  voc_syllables = {syllable for syllable in voc.split(" ") if len(syllable) >0}
+  all_transcriptions = OrderedSet()
+  failed_syllables = OrderedSet()
+  logger = getLogger(__name__)
+  for syllable in tqdm(sorted(voc_syllables)):
+    try:
+      res = pinyin_to_ipa(syllable)
+    except ValueError as ex:
+      logger.debug(ex)
+      failed_syllables.add(syllable)
+      continue
+    all_transcriptions |= res
+    assert len(res) > 0
+
+  unique_IPA_symbols = sorted({
+    symbol
+    for transcription in all_transcriptions
+    for symbol in transcription
+  })
+
+  assert len(unique_IPA_symbols) == 111
   assert len(failed_syllables) == 0

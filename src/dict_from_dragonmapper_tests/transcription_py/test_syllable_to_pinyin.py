@@ -14,6 +14,10 @@ def test_syllable_with_two_readings():
   assert res == OrderedSet(['ma', 'má'])
 
 
+def test_rua():
+  res = syllable_to_pinyin("挼")
+  assert res == OrderedSet(['ruó', 'suī', 'luò', 'ruá'])
+
 def test_syllable_with_nine_readings():
   res = syllable_to_pinyin("嗯")
   assert res == OrderedSet(['ń', 'ň', 'ǹ', 'nǵ', 'nǧ', 'ng̀', 'ńg', 'ňg', 'ǹg'])
